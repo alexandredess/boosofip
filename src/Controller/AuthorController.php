@@ -30,4 +30,5 @@ class AuthorController extends AbstractController
             $jsonAuthor = $serializerInterface->serialize($author,'json',['groups'=>'getAuthors']);
             return new JsonResponse($jsonAuthor,Response::HTTP_OK,[],true); 
     }
+    
 }
