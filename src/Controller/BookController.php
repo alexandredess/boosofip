@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 
 class BookController extends AbstractController
 {
@@ -73,5 +74,21 @@ class BookController extends AbstractController
             return new JsonResponse($jsonBook,Response::HTTP_CREATED,["location"=>$location],true); 
     }
 
-    
+    #[Route('api/book/{id}', name:'app_update_book', methods:['PUT'])]
+    public function updateBook(Request $request,SerializerInterface $serializerInterface,Book $currentBook,
+    EntityManagerInterface $em,AuthorRepository $authorRepository): JsonResponse
+    {
+        $updateBook = $serializerInterface->deserialize($request->getContent(),
+                    Book::class,
+                    'json',[AbstractNormalizer::OBJECT_TO_POPULATE=>$currentBook]);
+        $content = $request->toArray();
+        $idAuthor=$content['author']??-1;
+        $updateBook->setAuthor($authorRepository->find($idAuthor));
+
+        $em->persist($updateBook);
+        $em->flush();
+
+        return new JsonResponse(null,JsonResponse::HTTP_ACCEPTED); 
+    }
+
 }
