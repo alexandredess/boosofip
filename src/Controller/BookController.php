@@ -15,6 +15,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+
 
 class BookController extends AbstractController
 {
@@ -46,6 +48,7 @@ class BookController extends AbstractController
     }
 
     #[Route('api/book', name:'app_create_book', methods:['POST'])]
+    #[IsGranted('ROLE_ADMIN',message:"Vous n'avez pas les droits suffisant pour créer un livre")]
     public function createBook(Request $request,SerializerInterface $serializerInterface,
     EntityManagerInterface $em,UrlGeneratorInterface $urlGeneratorInterface,AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse
     {
