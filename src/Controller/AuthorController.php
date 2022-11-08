@@ -5,10 +5,12 @@ namespace App\Controller;
 use App\Entity\Author;
 use App\Repository\AuthorRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -19,10 +21,18 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 class AuthorController extends AbstractController
 {
     #[Route('api/author', name: 'app_author', methods:['GET'])]
-    public function getAllAuthor(AuthorRepository $authorRepository, SerializerInterface $serializerInterface): JsonResponse
+    public function getAllAuthor(AuthorRepository $authorRepository, SerializerInterface $serializer,Request $request, TagAwareCacheInterface $cache): JsonResponse
     {
-        $authorList = $authorRepository->findAll();
-        $jsonAuthorList= $serializerInterface->serialize($authorList,'json',['groups'=>'getAuthors']);
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit', 3);
+
+        $idCache = "getAllAuthors-" . $page . "-" . $limit;
+
+        $jsonAuthorList = $cache->get($idCache, function (ItemInterface $item) use ($authorRepository, $page, $limit, $serializer) {
+            $item->tag("authorsCache");
+            $bookList = $authorRepository->findAllWithPagination($page, $limit);
+            return $serializer->serialize($bookList, 'json', ['groups' => 'getAuthors']);
+        });
         
         //retourne la liste de livre en format json et nous donne un status ok 
         return new JsonResponse($jsonAuthorList,Response::HTTP_OK,[],true);
