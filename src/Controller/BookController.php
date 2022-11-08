@@ -3,32 +3,41 @@
 namespace App\Controller;
 
 use App\Entity\Book;
-use App\Repository\AuthorRepository;
 use App\Repository\BookRepository;
+use App\Repository\AuthorRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
-
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 class BookController extends AbstractController
 {
-    #[Route('api/book', name: 'app_book', methods:['GET'])]
-    public function getAllBooks(BookRepository $bookRepository, SerializerInterface $serializerInterface): JsonResponse
+    #[Route('/api/books', name: 'books', methods: ['GET'])]
+    public function getAllBooks(BookRepository $bookRepository, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cache): JsonResponse
     {
-        $bookList = $bookRepository->findAll();
-        $jsonBookList= $serializerInterface->serialize($bookList,'json',['groups'=>'getBooks']);
+
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit', 3);
+
+        $idCache = "getAllBooks-" . $page . "-" . $limit;
         
-        //retourne la liste de livre en format json et nous donne un status ok 
-        return new JsonResponse($jsonBookList,Response::HTTP_OK,[],true);
-    }
+        $jsonBookList = $cache->get($idCache, function (ItemInterface $item) use ($bookRepository, $page, $limit, $serializer) {
+            $item->tag("booksCache");
+            $bookList = $bookRepository->findAllWithPagination($page, $limit);
+            return $serializer->serialize($bookList, 'json', ['groups' => 'getBooks']);
+        });
+      
+        return new JsonResponse($jsonBookList, Response::HTTP_OK, [], true);
+   }
 
     #[Route('api/book/{id}', name: 'app_detail_book', methods:['GET'])]
     public function getDetailBook(Book $book,SerializerInterface $serializerInterface): JsonResponse
