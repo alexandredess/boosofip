@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Book;
 use App\Repository\BookRepository;
+use App\Service\VersioningService;
 use App\Repository\AuthorRepository;
 use JMS\Serializer\SerializerInterface;
 use Doctrine\ORM\EntityManagerInterface;
@@ -43,9 +44,13 @@ class BookController extends AbstractController
    }
 
     #[Route('api/book/{id}', name: 'app_detail_book', methods:['GET'])]
-    public function getDetailBook(Book $book,SerializerInterface $serializerInterface): JsonResponse
+    public function getDetailBook(Book $book,SerializerInterface $serializerInterface,VersioningService $versioningService): JsonResponse
     {
+        
+        //gestion de la version 
+        $version=$versioningService->getVersion();
         $context = SerializationContext::create()->setGroups(['getBooks']);
+        $context->setVersion($version);
             //grâce au parmaConverter on arrive à 
             //récupérer le livre en fonction de son id
             $jsonBook = $serializerInterface->serialize($book,'json',$context);

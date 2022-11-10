@@ -4,9 +4,10 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\BookRepository;
+use JMS\Serializer\Annotation\Since;
 use JMS\Serializer\Annotation\Groups;
-use Symfony\Component\Validator\Constraints as Assert;
 use Hateoas\Configuration\Annotation as Hateoas;
+use Symfony\Component\Validator\Constraints as Assert;
 
 
 /**
@@ -59,6 +60,12 @@ class Book
     #[Groups(["getBooks"])]
     private ?Author $author = null;
 
+    #[ORM\Column(type:'text',nullable: true)]
+    #[Groups(["getBooks"])]
+    //mise en place de la version
+    #[Since("2.0")]
+    private ?string $comment = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -96,6 +103,18 @@ class Book
     public function setAuthor(?Author $author): self
     {
         $this->author = $author;
+
+        return $this;
+    }
+
+    public function getComment(): ?string
+    {
+        return $this->comment;
+    }
+
+    public function setComment(?string $comment): self
+    {
+        $this->comment = $comment;
 
         return $this;
     }
